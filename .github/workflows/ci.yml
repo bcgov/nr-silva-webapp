@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests-javascript:
+    name: JavaScript CI
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: ubuntu-22.04
+    env:
+      VITE_NRSPARWEBAPP_VERSION: dev
+    steps:
+      - uses: bcgov-nr/action-test-and-analyse@v0.0.1
+        with:
+          node_version: "16.19.1"
+          commands: |
+            npm i
+            npm run lint
+            npm test --coverage
+          dir: frontend
+          sonar_args: >
+            -Dsonar.organization=bcgov-sonarcloud
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.cobertura.reportPaths=coverage/cobertura-coverage.xml
+            -Dsonar.projectKey=nr-spar_frontend
+            -Dsonar.sources=src/
+            -Dsonar.exclusions=src/**/__test__/**/*
+            -Dsonar.test.inclusions=src/**/__test__/**/*
+          sonar_project_token: ${{ secrets.SONAR_FRONTEND }}
+
+  # https://github.com/marketplace/actions/aqua-security-trivy
+  trivy:
+    name: Security Scan
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run Trivy vulnerability scanner in repo mode
+        uses: aquasecurity/trivy-action@0.10.0
+        with:
+          format: "sarif"
+          output: "trivy-results.sarif"
+          ignore-unfixed: true
+          scan-type: "fs"
+          scanners: "vuln,secret,config"
+          severity: "CRITICAL,HIGH"
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: "trivy-results.sarif"
