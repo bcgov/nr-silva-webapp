@@ -5,12 +5,12 @@ labels:
 parameters:
   - name: NAME
     description: Module name
-    value: nr-spar-webapp
+    value: nr-silva
   - name: COMPONENT
     description: Component name
     value: frontend
   - name: ZONE
-    description: Deployment zone, e.g. pr-### or prod
+    description: Deployment zone, e.g. pr-### | test | prod
     required: true
   - name: IMAGE_TAG
     description: Image tag to use
@@ -36,27 +36,12 @@ parameters:
     value: ghcr.io
   - name: PROMOTE
     description: Image (namespace/name:tag) to promote/import
-    value: bcgov/nr-spar-webapp/frontend:test
-  - name: REACT_APP_SPAR_BUILD_VERSION
-    description: Current sample app release version
+    value: bcgov/nr-silva-webapp/frontend:test
+  - name: REACT_APP_MAIN_VERSION
+    description: Current app main version
     required: true
-  - name: REACT_APP_SERVER_URL
-    description: REACT_APP_SERVER_URL
-    required: true
-  - name: REACT_APP_NRSPARWEBAPP_VERSION
-    description: REACT_APP_NRSPARWEBAPP_VERSION
-    required: true
-  - name: REACT_APP_KC_URL
-    description: REACT_APP_KC_URL
-    required: true
-  - name: REACT_APP_KC_REALM
-    description: REACT_APP_KC_REALM
-    required: true
-  - name: REACT_APP_KC_CLIENT_ID
-    description: REACT_APP_KC_CLIENT_ID
-    required: true
-  - name: REACT_APP_ORACLE_SERVER_URL
-    description: Oracle back-end api URL
+  - name: REACT_APP_COGNITO_REGION
+    description: Cognito region
     required: true
 objects:
   - apiVersion: v1
@@ -108,20 +93,20 @@ objects:
               imagePullPolicy: Always
               name: ${NAME}
               env:
-                - name: REACT_APP_SPAR_BUILD_VERSION
-                  value: ${REACT_APP_SPAR_BUILD_VERSION}
-                - name: REACT_APP_SERVER_URL
-                  value: ${REACT_APP_SERVER_URL}
-                - name: REACT_APP_NRSPARWEBAPP_VERSION
-                  value: ${REACT_APP_NRSPARWEBAPP_VERSION}
-                - name: REACT_APP_KC_URL
-                  value: ${REACT_APP_KC_URL}
-                - name: REACT_APP_KC_REALM
-                  value: ${REACT_APP_KC_REALM}
-                - name: REACT_APP_KC_CLIENT_ID
-                  value: ${REACT_APP_KC_CLIENT_ID}
-                - name: REACT_APP_ORACLE_SERVER_URL
-                  value: ${REACT_APP_ORACLE_SERVER_URL}
+                - name: REACT_APP_MAIN_VERSION
+                  value: ${REACT_APP_MAIN_VERSION}
+                - name: REACT_APP_COGNITO_REGION
+                  value: ${REACT_APP_COGNITO_REGION}
+                - name: REACT_APP_USER_POOLS_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${NAME}-${ZONE}-${COMPONENT}
+                      key: react-app-user-pools-id
+                - name: REACT_APP_USER_POOLS_WEB_CLIENT_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${NAME}-${ZONE}-${COMPONENT}
+                      key: react-app-user-pools-web-client-id
               ports:
                 - containerPort: 3000
                   protocol: TCP
